@@ -1,0 +1,453 @@
+*:not(i) {
+    font-family: Arial, sans-serif;
+    color: white;
+    scrollbar-width: thin;
+    scrollbar-color: #444444 #121212;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
+* button {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+body {
+    background-color: #121212;
+    margin: 0;
+}
+h1,
+h3,
+p,
+a {
+    margin: 0;
+}
+
+.main {
+    display: grid;
+    grid-template-rows: auto 1fr 40px;
+    min-height: 100vh;
+}
+
+.navbar,
+.footer {
+    background-color: #1e1e1e;
+}
+
+.navbar {
+    border-bottom: 1px solid #f59e0b;
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 32px;
+    position: sticky;
+    top: 0;
+    -webkit-user-select: none;
+    user-select: none;
+    box-sizing: border-box;
+    z-index: 3;
+}
+.add {
+    background-color: #f59e0b;
+    color: #1e1e1e;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    font-weight: bold;
+    transition: scale 0.3s ease;
+}
+.add:hover:not(:active) {
+    animation: shake 0.3s forwards;
+}
+.add:active {
+    background-color: #ffb40b;
+    scale: 0.9;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-rows: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 32px;
+    padding: 32px;
+    min-height: max-content;
+}
+
+.empty {
+    width: 90%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+.empty small {
+    color: #f59e0b;
+}
+
+.card {
+    background-color: #1e1e1e;
+    outline: 1px solid transparent;
+    transition: outline-color 0.3s ease;
+    position: relative;
+    border-radius: 16px;
+    padding: 16px;
+    display: grid;
+    grid-template-areas:
+        "logo name edit"
+        "logo address power";
+    gap: 16px;
+    align-items: center;
+    cursor: pointer;
+    z-index: 1;
+}
+.card > i {
+    background-color: #f59e0b;
+    color: #1e1e1e;
+    outline: 1px solid transparent;
+    width: 64px;
+    height: 64px;
+    font-size: 32px;
+    border-radius: 50%;
+    align-content: center;
+    text-align: center;
+    grid-area: logo;
+}
+.card > h3 {
+    grid-area: name;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.card > p {
+    color: #d4d4d4;
+    grid-area: address;
+}
+.card > button {
+    background-color: transparent;
+    color: #d4d4d4;
+    cursor: pointer;
+    font-size: 24px;
+    grid-area: edit;
+}
+.card > span {
+    color: #ef4444;
+    font-size: 24px;
+    text-align: center;
+    grid-area: power;
+}
+
+.card:hover {
+    outline-color: #f59e0b;
+}
+.card.clicked {
+    animation: clicked 0.3s forwards;
+}
+.card.power > span {
+    animation: pulse 1s ease-in-out infinite;
+}
+.card.power-on > span {
+    color: #22c55e;
+}
+
+.footer {
+    border-top: 1px solid #f59e0b;
+    align-content: center;
+    text-align: center;
+    box-sizing: border-box;
+    z-index: 2;
+}
+.footer a {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.options {
+    background-color: #1e1e1e;
+    outline: 1px solid #f59e0b;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: max-content;
+    padding: 8px;
+    border-radius: 8px;
+    display: grid;
+    grid-template-rows: repeat(3, minmax(34px, 1fr));
+    gap: 8px;
+    animation: spawn 0.3s forwards;
+}
+.option {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+.option:hover {
+    background-color: #444444;
+}
+
+.modal {
+    background-color: rgba(18, 18, 18, 0.5);
+    backdrop-filter: blur(4px);
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    z-index: 4;
+}
+.form {
+    background-color: #141414;
+    outline: 1px solid #f59e0b;
+    border-radius: 16px;
+    padding: 32px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 75%;
+    max-width: 400px;
+    height: max-content;
+    max-height: 80%;
+    display: grid;
+    grid-template-rows: 28px 1fr 48px;
+    align-items: center;
+    gap: 16px;
+    transition: outline-color 0.3s ease;
+}
+.inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+    padding: 1px 8px;
+    overflow-y: auto;
+}
+.form > :first-child {
+    text-align: center;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+.form-group > label {
+    padding-bottom: 8px;
+    font-weight: bold;
+}
+.button-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.form input {
+    background-color: #1e1e1e;
+    outline: 1px solid transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: white;
+    font-size: 16px;
+    transition: outline-color 0.3s ease;
+}
+.form input:hover {
+    outline-color: #f59e0b;
+}
+.form input:focus {
+    outline-color: #f59e0b;
+}
+.form .cancel,
+.form .save {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.form .save:active,
+.form .cancel:active {
+    transform: scale(0.95);
+}
+.form .save {
+    background-color: #f59e0b;
+    color: #1e1e1e;
+}
+.form .save:hover {
+    background-color: #ffb40b;
+}
+.form .cancel:hover {
+    background-color: #444444;
+}
+.dispose {
+    animation: dispose 0.3s forwards;
+}
+.modal:not(.dispose, .hidden) {
+    animation: spawnModal 0.3s forwards;
+}
+
+.alert {
+    background-color: #1e1e1e;
+    outline: 1px solid #f59e0b;
+    border-radius: 16px;
+    padding: 16px;
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    z-index: 4;
+}
+.alert:not(.dispose) {
+    animation: spawnAlert 0.3s forwards;
+}
+.alert.dispose {
+    animation: disposeAlert 0.3s forwards;
+}
+.alert > :first-child {
+    color: #f59e0b;
+}
+
+.hidden {
+    display: none;
+}
+
+input:-webkit-autofill {
+    transition: background-color 60s !important;
+    -webkit-box-shadow: 0 0 0px 500px #1e1e1e inset !important;
+    -webkit-text-fill-color: #f59e0b;
+}
+
+@keyframes shake {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(15deg);
+    }
+    50% {
+        transform: rotate(-15deg);
+    }
+    75% {
+        transform: rotate(15deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes clicked {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.96);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.2;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes spawn {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes spawnModal {
+    0% {
+        opacity: 0;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes spawnAlert {
+    0% {
+        opacity: 0;
+        top: -64px;
+    }
+    100% {
+        opacity: 1;
+        top: 16px;
+    }
+}
+
+@keyframes dispose {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes disposeAlert {
+    0% {
+        opacity: 1;
+        top: 16px;
+    }
+    100% {
+        opacity: 0;
+        top: -64px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .navbar {
+        grid-template-columns: 32px 1fr 48px;
+        padding: 16px;
+    }
+    .navbar > svg {
+        width: 32px;
+    }
+    .add {
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+    }
+    .container {
+        gap: 16px;
+    }
+    .container:has(> :nth-child(4)) > :last-child > .options {
+        top: -52px;
+    }
+    .card > i {
+        width: 48px;
+        height: 48px;
+        font-size: 24px;
+        border-radius: 50%;
+    }
+    .alert {
+        max-width: 70%;
+    }
+}

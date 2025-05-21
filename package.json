@@ -1,0 +1,17 @@
+{
+    "name": "wol",
+    "version": "1.0.0",
+    "main": "main.js",
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Ulises Noriega",
+    "description": "A simple Wake on LAN server",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^5.1.0",
+        "wake_on_lan": "^1.0.0"
+    }
+}
