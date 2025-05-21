@@ -1,4 +1,4 @@
-const url = "http://localhost:3000/wol";
+const url = `${window.location.origin}/wol`;
 
 export const getStatus = async (data) => {
     const response = await fetch(url, {
