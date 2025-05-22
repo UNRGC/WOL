@@ -11,7 +11,7 @@ export const checkStatusHandler = async (req, res) => {
             res.status(200).json({ message: "El dispositivo está encendido." });
         } else {
             console.debug("El dispositivo está apagado", HOST);
-            res.status(202).json({ message: "El puerto de estado no responde. Verifica la configuración y la conectividad." });
+            res.status(202).json({ message: "El puerto de estado no responde. Verifica la configuración." });
         }
     } catch (error) {
         console.error("Error al verificar el estado:", error.message);

@@ -1,8 +1,8 @@
+/* --- Generales --- */
 *:not(i) {
     font-family: Arial, sans-serif;
     color: white;
-    scrollbar-width: thin;
-    scrollbar-color: #444444 #121212;
+    scrollbar-width: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-user-select: none;
     user-select: none;
@@ -23,18 +23,16 @@ a {
     margin: 0;
 }
 
+/* --- Cuerpo completo --- */
 .main {
     display: grid;
     grid-template-rows: auto 1fr 40px;
     min-height: 100vh;
 }
 
-.navbar,
-.footer {
-    background-color: #1e1e1e;
-}
-
+/* --- Header --- */
 .navbar {
+    background-color: #1e1e1e;
     border-bottom: 1px solid #f59e0b;
     display: grid;
     grid-template-columns: 48px 1fr 48px;
@@ -67,6 +65,7 @@ a {
     scale: 0.9;
 }
 
+/* --- Contenedor de tarjetas --- */
 .container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -75,7 +74,6 @@ a {
     padding: 32px;
     min-height: max-content;
 }
-
 .empty {
     width: 90%;
     position: absolute;
@@ -88,6 +86,7 @@ a {
     color: #f59e0b;
 }
 
+/* --- Tarjetas --- */
 .card {
     background-color: #1e1e1e;
     outline: 1px solid transparent;
@@ -139,7 +138,6 @@ a {
     text-align: center;
     grid-area: power;
 }
-
 .card:hover {
     outline-color: #f59e0b;
 }
@@ -153,7 +151,9 @@ a {
     color: #22c55e;
 }
 
+/* --- Footer --- */
 .footer {
+    background-color: #1e1e1e;
     border-top: 1px solid #f59e0b;
     align-content: center;
     text-align: center;
@@ -165,6 +165,7 @@ a {
     font-weight: bold;
 }
 
+/* --- Flotantes --- */
 .options {
     background-color: #1e1e1e;
     outline: 1px solid #f59e0b;
@@ -192,6 +193,7 @@ a {
     background-color: #444444;
 }
 
+/* --- Modal --- */
 .modal {
     background-color: rgba(18, 18, 18, 0.5);
     backdrop-filter: blur(4px);
@@ -224,7 +226,7 @@ a {
     flex-direction: column;
     gap: 16px;
     height: 100%;
-    padding: 1px 8px;
+    padding: 1px;
     overflow-y: auto;
 }
 .form > :first-child {
@@ -243,7 +245,6 @@ a {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
 }
-
 .form input {
     background-color: #1e1e1e;
     outline: 1px solid transparent;
@@ -290,6 +291,7 @@ a {
     animation: spawnModal 0.3s forwards;
 }
 
+/* --- Alerta --- */
 .alert {
     background-color: #1e1e1e;
     outline: 1px solid #f59e0b;
@@ -317,16 +319,63 @@ a {
     color: #f59e0b;
 }
 
+/* --- Cookies --- */
+.cookies {
+    background-color: #1e1e1e;
+    outline: 1px solid #f59e0b;
+    padding: 16px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 4;
+}
+.cookies:not(.dispose) {
+    animation: spawnCookies 1s forwards;
+}
+.cookies.dispose {
+    animation: disposeCookies 1s forwards;
+}
+.cookies-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+    align-items: center;
+    max-width: 90%;
+}
+.cookies-content > :first-child {
+    color: #f59e0b;
+}
+.cookies-content > button {
+    background-color: #f59e0b;
+    color: #1e1e1e;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    max-width: 200px;
+}
+.cookies-content > button:hover {
+    background-color: #ffb40b;
+}
+.cookies-content > button:active {
+    transform: scale(0.95);
+}
+
+/* --- Ocultar --- */
 .hidden {
     display: none;
 }
 
+/* --- Webkit --- */
 input:-webkit-autofill {
     transition: background-color 60s !important;
     -webkit-box-shadow: 0 0 0px 500px #1e1e1e inset !important;
     -webkit-text-fill-color: #f59e0b;
 }
 
+/* --- Animaciones --- */
 @keyframes shake {
     0% {
         transform: rotate(0deg);
@@ -402,6 +451,15 @@ input:-webkit-autofill {
     }
 }
 
+@keyframes spawnCookies {
+    0% {
+        bottom: -192px;
+    }
+    100% {
+        bottom: 0;
+    }
+}
+
 @keyframes dispose {
     0% {
         opacity: 1;
@@ -422,6 +480,16 @@ input:-webkit-autofill {
     }
 }
 
+@keyframes disposeCookies {
+    0% {
+        bottom: 0;
+    }
+    100% {
+        bottom: -200px;
+    }
+}
+
+/* --- Movil --- */
 @media screen and (max-width: 768px) {
     .navbar {
         grid-template-columns: 32px 1fr 48px;

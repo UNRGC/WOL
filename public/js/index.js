@@ -1,8 +1,10 @@
 import spawnAlert from "./alert.js";
 import { getStatus, sendWOL } from "./request.js";
 
+// Variables
 let editMode = false;
 
+// Elementos
 const btnAdd = document.getElementById("add");
 
 const main = document.querySelector("main");
@@ -19,6 +21,12 @@ const inputTimeout = document.getElementById("timeout");
 
 const btnCancel = document.getElementById("cancel");
 
+const cookiesElement = document.getElementById("cookies");
+const btnAccept = document.getElementById("accept");
+
+const cookies = localStorage.getItem("cookies") || false;
+
+// Función para obtener un dispositivo
 const loadDevice = (mac) => {
     const list = JSON.parse(localStorage.getItem("list")) || [];
     const deviceIndex = list.find((device) => device.mac === mac);
@@ -35,6 +43,7 @@ const loadDevice = (mac) => {
     modalDevice.classList.remove("hidden");
 };
 
+// Función para agregar un dispositivo
 const addDevice = () => {
     const list = JSON.parse(localStorage.getItem("list")) || [];
 
@@ -68,6 +77,7 @@ const addDevice = () => {
     formDevice.reset();
 };
 
+// Función para actualizar un dispositivo
 const updateDevice = (mac) => {
     const list = JSON.parse(localStorage.getItem("list")) || [];
     const deviceIndex = list.findIndex((device) => device.mac === mac);
@@ -96,6 +106,7 @@ const updateDevice = (mac) => {
     formDevice.reset();
 };
 
+// Función para eliminar un dispositivo
 const deleteDevice = (mac) => {
     const list = JSON.parse(localStorage.getItem("list")) || [];
     const deviceIndex = list.findIndex((device) => device.mac === mac);
@@ -110,6 +121,124 @@ const deleteDevice = (mac) => {
     showDevices();
 };
 
+// Mostrar el aviso de cookies
+cookies ? cookiesElement.classList.add("hidden") : cookiesElement.classList.remove("hidden");
+
+// Ajustar el tamaño del contenedor
+main.style.minHeight = `${window.innerHeight}px`;
+
+// Mostrar los dispositivos al cargar la página
+showDevices();
+
+// Agregar evento de redimensionamiento de la ventana
+window.addEventListener("resize", () => {
+    main.style.minHeight = `${window.innerHeight}px`;
+});
+
+// Agregar evento de clic en el botón de escape
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modalDevice.classList.contains("hidden")) {
+        e.preventDefault();
+        btnCancel.click();
+    }
+});
+
+// Agregar evento de clic en el botón de agregar
+btnAdd.addEventListener("click", () => {
+    modalDevice.classList.remove("hidden");
+});
+
+// Agregar evento de envío del formulario
+formDevice.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    // Función para validar la longitud de los campos
+    const validateLength = (value, min) => {
+        if (value.length < min) return false;
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return true;
+    };
+
+    if (!validateLength(inputName.value, 3)) {
+        spawnAlert("Observación", "El nombre no es valido. Debe tener al menos 3 caracteres.", "exclamation-triangle", 4000);
+        return;
+    }
+    if (!validateLength(inputHost.value, 7)) {
+        spawnAlert("Observación", "La dirección IP no es válida. Debe tener al menos 7 caracteres.", "exclamation-triangle", 4000);
+        return;
+    }
+    if (!validateLength(inputMAC.value, 17)) {
+        spawnAlert("Observación", "La dirección MAC no es válida. Debe tener al menos 17 caracteres.", "exclamation-triangle", 4000);
+        return;
+    }
+
+    try {
+        if (editMode) updateDevice(inputMAC.value);
+        else addDevice();
+
+        // Mostrar los dispositivos
+        showDevices();
+    } catch (error) {
+        console.error("Error al modificar el dispositivo:", error.message);
+        spawnAlert("Error", "Ocurrió un error al modificar el dispositivo. Por favor, verifica los datos ingresados o las cookies.", "x-circle");
+        return;
+    }
+});
+
+// Agregar evento de validación del host
+inputHost.addEventListener("input", (e) => {
+    e.target.value = e.target.value.replace(/\s+/g, "");
+});
+
+// Agregar evento de validación de la dirección MAC
+inputMAC.addEventListener("input", (e) => {
+    let value = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+    value = value.slice(0, 12);
+    const formattedValue = value.match(/.{1,2}/g)?.join(":") || "";
+    e.target.value = formattedValue;
+});
+
+// Agregar evento de validación de los puertos
+inputPort.addEventListener("input", (e) => {
+    let value = e.target.value.replace(/[^0-9]/g, "");
+    value = value.slice(0, 5);
+    e.target.value = value;
+});
+inputPortStatus.addEventListener("input", (e) => {
+    let value = e.target.value.replace(/[^0-9]/g, "");
+    value = value.slice(0, 5);
+    e.target.value = value;
+});
+
+// Agregar evento de validación del tiempo de espera
+inputTimeout.addEventListener("input", (e) => {
+    let value = e.target.value.replace(/[^0-9]/g, "");
+    value = value.slice(0, 4);
+    e.target.value = value;
+});
+
+// Agregar evento de clic en el botón de cancelar
+btnCancel.addEventListener("click", () => {
+    modalDevice.classList.add("dispose");
+    setTimeout(() => {
+        modalDevice.classList.add("hidden");
+        modalDevice.classList.remove("dispose");
+    }, 300);
+    editMode = false;
+});
+
+// Agregar evento de clic en el botón de aceptar
+btnAccept.addEventListener("click", () => {
+    cookiesElement.classList.add("dispose");
+    setTimeout(() => {
+        cookiesElement.classList.add("hidden");
+        cookiesElement.classList.remove("dispose");
+    }, 1000);
+    localStorage.setItem("cookies", true);
+});
+
+// Función para mostrar los dispositivos
 function showDevices() {
     const list = JSON.parse(localStorage.getItem("list")) || [];
 
@@ -120,10 +249,30 @@ function showDevices() {
 
     container.innerHTML = "";
 
+    // Recorrer la lista de dispositivos
     list.forEach((device) => {
-        const card = document.createElement("div");
         let options = null;
+        const card = document.createElement("div");
 
+        // Función para comprobar el estado del dispositivo
+        const checkStatus = async () => {
+            const data = {
+                HOST: device.host,
+                PORT: device.portStatus,
+            };
+
+            const powerResponse = await getStatus(data);
+
+            if (powerResponse.status === 200) {
+                card.classList.remove("power");
+                card.classList.add("power-on");
+            } else {
+                card.classList.remove("power");
+                card.classList.remove("power-on");
+            }
+        };
+
+        // Crear la tarjeta del dispositivo
         card.classList.add("card");
         card.classList.add("power");
         card.innerHTML = `
@@ -134,15 +283,17 @@ function showDevices() {
             <span><i class="bi bi-power"></i></span>
         `;
 
+        // Agregar evento de fin de animación
         card.addEventListener("animationend", (a) => {
             if (a.animationName === "clicked") card.classList.remove("clicked");
         });
 
+        // Agregar evento de clic en la tarjeta
         card.addEventListener("click", async () => {
             options = card.querySelector(".options") || null;
 
             if (!options) card.classList.add("clicked");
-            if (!card.classList.contains("power-on")) {
+            if (!card.classList.contains("power-on") && !card.classList.contains("power")) {
                 card.classList.add("power");
 
                 let data = {
@@ -185,9 +336,10 @@ function showDevices() {
                         card.classList.remove("power");
                     }
                 }, parseInt(device.timeout) * 1000);
-            }
+            } else if (card.classList.contains("power")) spawnAlert("Observación", "Comprobando estado del dispositivo...", "exclamation-triangle");
         });
 
+        // Agregar evento de mouseover y mouseleave
         card.addEventListener("mouseleave", () => {
             options = card.querySelector(".options") || null;
 
@@ -196,9 +348,11 @@ function showDevices() {
             card.style.zIndex = 1;
         });
 
+        // Agregar evento de clic en el botón de opciones
         card.querySelector("button").addEventListener("click", (e) => {
             e.stopPropagation();
 
+            // Crear el flotante de opciones
             const optionsElement = `
                 <div class="options">
                     <div class="option" data-action="close">
@@ -216,10 +370,13 @@ function showDevices() {
                 </div>
                 `;
 
+            // Insertar el flotante de opciones en la tarjeta
             card.insertAdjacentHTML("beforeend", optionsElement);
             card.style.zIndex = 2;
 
+            // Recorrer las opciones
             card.querySelectorAll(".option").forEach((option) => {
+                // Agregar evento de clic en cada opción
                 option.addEventListener("click", (o) => {
                     o.stopPropagation();
 
@@ -245,25 +402,10 @@ function showDevices() {
             });
         });
 
+        // Insertar la tarjeta en el contenedor
         container.appendChild(card);
 
-        const checkStatus = async () => {
-            const data = {
-                HOST: device.host,
-                PORT: device.portStatus,
-            };
-
-            const powerResponse = await getStatus(data);
-
-            if (powerResponse.status === 200) {
-                card.classList.remove("power");
-                card.classList.add("power-on");
-            } else {
-                card.classList.remove("power");
-                card.classList.remove("power-on");
-            }
-        };
-
+        // Comprobar el estado del dispositivo
         setInterval(() => {
             if (card.classList.contains("power-on")) checkStatus();
         }, 5000);
@@ -271,97 +413,3 @@ function showDevices() {
         checkStatus();
     });
 }
-
-main.style.minHeight = `${window.innerHeight}px`;
-
-showDevices();
-
-window.addEventListener("resize", () => {
-    main.style.minHeight = `${window.innerHeight}px`;
-});
-
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !modalDevice.classList.contains("hidden")) {
-        e.preventDefault();
-        btnCancel.click();
-    }
-});
-
-btnAdd.addEventListener("click", () => {
-    modalDevice.classList.remove("hidden");
-});
-
-formDevice.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const validateLength = (value, min) => {
-        if (value.length < min) {
-            return false;
-        }
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return true;
-    };
-
-    if (!validateLength(inputName.value, 3)) {
-        spawnAlert("Observación", "El nombre no es valido. Debe tener al menos 3 caracteres.", "exclamation-triangle", 4000);
-        return;
-    }
-    if (!validateLength(inputHost.value, 7)) {
-        spawnAlert("Observación", "La dirección IP no es válida. Debe tener al menos 7 caracteres.", "exclamation-triangle", 4000);
-        return;
-    }
-    if (!validateLength(inputMAC.value, 17)) {
-        spawnAlert("Observación", "La dirección MAC no es válida. Debe tener al menos 17 caracteres.", "exclamation-triangle", 4000);
-        return;
-    }
-
-    try {
-        if (editMode) updateDevice(inputMAC.value);
-        else addDevice();
-
-        // Mostrar los dispositivos
-        showDevices();
-    } catch (error) {
-        console.error("Error al modificar el dispositivo:", error.message);
-        spawnAlert("Error", "Ocurrió un error al modificar el dispositivo. Por favor, verifica los datos ingresados o las cookies.", "x-circle");
-        return;
-    }
-});
-
-inputHost.addEventListener("input", (e) => {
-    e.target.value = e.target.value.replace(/\s+/g, "");
-});
-
-inputMAC.addEventListener("input", (e) => {
-    let value = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
-    value = value.slice(0, 12);
-    const formattedValue = value.match(/.{1,2}/g)?.join(":") || "";
-    e.target.value = formattedValue;
-});
-
-inputPort.addEventListener("input", (e) => {
-    let value = e.target.value.replace(/[^0-9]/g, "");
-    value = value.slice(0, 5);
-    e.target.value = value;
-});
-
-inputPortStatus.addEventListener("input", (e) => {
-    let value = e.target.value.replace(/[^0-9]/g, "");
-    value = value.slice(0, 5);
-    e.target.value = value;
-});
-
-inputTimeout.addEventListener("input", (e) => {
-    let value = e.target.value.replace(/[^0-9]/g, "");
-    value = value.slice(0, 4);
-    e.target.value = value;
-});
-
-btnCancel.addEventListener("click", () => {
-    modalDevice.classList.add("dispose");
-    setTimeout(() => {
-        modalDevice.classList.add("hidden");
-        modalDevice.classList.remove("dispose");
-    }, 300);
-    editMode = false;
-});

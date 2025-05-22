@@ -2,6 +2,10 @@ import express from "express";
 import cors from "cors";
 import wolRoutes from "./src/routes/wolRoutes.js";
 import os from "os";
+import { config } from "dotenv";
+
+// Cargar variables de entorno
+config();
 
 // Configuración del puerto
 const PORT = process.env.PORT || 3000;

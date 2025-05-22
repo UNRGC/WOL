@@ -15,7 +15,7 @@ export const checkStatus = (HOST, PORT) => {
             resolve(false);
         };
 
-        socket.setTimeout(5000);
+        socket.setTimeout(10000);
         socket.once("connect", onSuccess);
         socket.once("error", onError);
         socket.once("timeout", onError);
