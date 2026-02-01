@@ -3,6 +3,7 @@ import { getStatus, sendWOL } from "./request.js";
 
 // Variables
 let editMode = false;
+let originalMAC = null; // Para guardar la MAC original al editar
 
 // Elementos
 const btnAdd = document.getElementById("add");
@@ -33,6 +34,7 @@ const loadDevice = (mac) => {
 
     if (!deviceIndex) return;
 
+    originalMAC = mac; // Guardar la MAC original
     inputName.value = deviceIndex.name;
     inputMAC.value = deviceIndex.mac;
     inputHost.value = deviceIndex.host;
@@ -75,12 +77,15 @@ const addDevice = () => {
     spawnAlert("Éxito", "Dispositivo agregado correctamente.", "check-circle");
 
     formDevice.reset();
+    modalDevice.classList.add("hidden");
 };
 
 // Función para actualizar un dispositivo
-const updateDevice = (mac) => {
+const updateDevice = () => {
     const list = JSON.parse(localStorage.getItem("list")) || [];
-    const deviceIndex = list.findIndex((device) => device.mac === mac);
+    const deviceIndex = list.findIndex((device) => device.mac === originalMAC);
+
+    if (deviceIndex === -1) return;
 
     const nameDevice = inputName.value;
     const macDevice = inputMAC.value;
@@ -104,6 +109,9 @@ const updateDevice = (mac) => {
     spawnAlert("Éxito", "Dispositivo actualizado correctamente.", "check-circle");
 
     formDevice.reset();
+    editMode = false;
+    originalMAC = null;
+    modalDevice.classList.add("hidden");
 };
 
 // Función para eliminar un dispositivo
@@ -174,7 +182,7 @@ formDevice.addEventListener("submit", (e) => {
     }
 
     try {
-        if (editMode) updateDevice(inputMAC.value);
+        if (editMode) updateDevice();
         else addDevice();
 
         // Mostrar los dispositivos
@@ -226,6 +234,7 @@ btnCancel.addEventListener("click", () => {
         modalDevice.classList.remove("dispose");
     }, 300);
     editMode = false;
+    originalMAC = null;
 });
 
 // Agregar evento de clic en el botón de aceptar
