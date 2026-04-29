@@ -3,12 +3,14 @@ import cors from "cors";
 import wolRoutes from "./src/routes/wolRoutes.js";
 import os from "os";
 import { config } from "dotenv";
+import { rateLimitByIp, requestTimeoutGuard } from "./src/middleware/securityMiddleware.js";
 
 // Cargar variables de entorno
 config();
 
 // Configuración del puerto
 const PORT = process.env.PORT || 3000;
+const trustProxy = (process.env.TRUST_PROXY || "true").toLowerCase() === "true";
 
 // Obtener la dirección IP de la máquina
 const getIPAddress = () => {
@@ -26,8 +28,11 @@ const getIPAddress = () => {
 // Crear la aplicación Express
 const app = express();
 
+// Permite reconocer IP real detrás de un proxy (Render u otros).
+app.set("trust proxy", trustProxy);
+
 // Configurar Express para que pueda parsear JSON
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 
 // Configurar CORS
 app.use(
@@ -53,7 +58,7 @@ app.use((err, req, res, next) => {
 });
 
 // Rutas
-app.use("/wol", wolRoutes);
+app.use("/wol", rateLimitByIp, requestTimeoutGuard, wolRoutes);
 
 // Archivos estáticos
 app.use(express.static("public"), express.static("private/video/hls"));

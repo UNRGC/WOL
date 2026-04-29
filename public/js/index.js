@@ -4,6 +4,23 @@ import { getStatus, sendWOL } from "./request.js";
 // Variables
 let editMode = false;
 let originalMAC = null; // Para guardar la MAC original al editar
+const statusIntervals = new Map();
+const STATUS_REFRESH_MS = 5000;
+
+const clearStatusInterval = (mac) => {
+    const intervalId = statusIntervals.get(mac);
+
+    if (intervalId !== undefined) {
+        clearInterval(intervalId);
+    }
+
+    statusIntervals.delete(mac);
+};
+
+const clearAllStatusIntervals = () => {
+    statusIntervals.forEach((intervalId) => clearInterval(intervalId));
+    statusIntervals.clear();
+};
 
 // Elementos
 const btnAdd = document.getElementById("add");
@@ -62,16 +79,14 @@ const addDevice = () => {
         return;
     }
 
-    const newDevice = {
+    list.push({
         name: nameDevice,
         mac: macDevice,
         host: hostDevice,
         port: portDevice,
         portStatus: portStatusDevice,
         timeout: timeoutDevice,
-    };
-
-    list.push(newDevice);
+    });
     localStorage.setItem("list", JSON.stringify(list));
 
     spawnAlert("Éxito", "Dispositivo agregado correctamente.", "check-circle");
@@ -94,7 +109,13 @@ const updateDevice = () => {
     const portStatusDevice = inputPortStatus.value;
     const timeoutDevice = inputTimeout.value;
 
-    const newDevice = {
+    const macExists = list.some((device, index) => device.mac === macDevice && index !== deviceIndex);
+    if (macExists) {
+        spawnAlert("Observación", "La dirección MAC ya existe. Por favor, ingresa una dirección MAC diferente.", "exclamation-triangle");
+        return;
+    }
+
+    list[deviceIndex] = {
         name: nameDevice,
         mac: macDevice,
         host: hostDevice,
@@ -102,8 +123,6 @@ const updateDevice = () => {
         portStatus: portStatusDevice,
         timeout: timeoutDevice,
     };
-
-    list[deviceIndex] = newDevice;
     localStorage.setItem("list", JSON.stringify(list));
 
     spawnAlert("Éxito", "Dispositivo actualizado correctamente.", "check-circle");
@@ -121,12 +140,75 @@ const deleteDevice = (mac) => {
 
     if (deviceIndex === -1) return;
 
+    clearStatusInterval(mac);
     list.splice(deviceIndex, 1);
     localStorage.setItem("list", JSON.stringify(list));
 
     spawnAlert("Éxito", "Dispositivo eliminado correctamente.", "check-circle");
 
     showDevices();
+};
+
+const buildEmptyState = () => {
+    const empty = document.createElement("h1");
+    empty.classList.add("empty");
+    empty.append("Presiona el botón ");
+
+    const small = document.createElement("small");
+    small.textContent = "+";
+
+    empty.appendChild(small);
+    empty.append(" para agregar un dispositivo");
+
+    return empty;
+};
+
+const buildOptionsMenu = (card, device) => {
+    const options = document.createElement("div");
+    options.classList.add("options");
+
+    const createOption = (action, iconClass, label) => {
+        const option = document.createElement("div");
+        option.classList.add("option");
+        option.dataset.action = action;
+
+        const icon = document.createElement("i");
+        icon.className = iconClass;
+
+        const small = document.createElement("small");
+        small.textContent = label;
+
+        option.append(icon, small);
+
+        option.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            options.remove();
+            card.style.zIndex = 1;
+
+            switch (action) {
+                case "edit":
+                    editMode = true;
+                    loadDevice(device.mac);
+                    break;
+                case "delete":
+                    deleteDevice(device.mac);
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        return option;
+    };
+
+    options.append(
+        createOption("close", "bi bi-x-lg", "Cerrar"),
+        createOption("edit", "bi bi-pencil-square", "Editar"),
+        createOption("delete", "bi bi-trash", "Eliminar")
+    );
+
+    return options;
 };
 
 // Mostrar el aviso de cookies
@@ -190,7 +272,6 @@ formDevice.addEventListener("submit", (e) => {
     } catch (error) {
         console.error("Error al modificar el dispositivo:", error.message);
         spawnAlert("Error", "Ocurrió un error al modificar el dispositivo. Por favor, verifica los datos ingresados o las cookies.", "x-circle");
-        return;
     }
 });
 
@@ -203,8 +284,7 @@ inputHost.addEventListener("input", (e) => {
 inputMAC.addEventListener("input", (e) => {
     let value = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
     value = value.slice(0, 12);
-    const formattedValue = value.match(/.{1,2}/g)?.join(":") || "";
-    e.target.value = formattedValue;
+    e.target.value = value.match(/.{1,2}/g)?.join(":") || "";
 });
 
 // Agregar evento de validación de los puertos
@@ -249,19 +329,39 @@ btnAccept.addEventListener("click", () => {
 
 // Función para mostrar los dispositivos
 function showDevices() {
+    clearAllStatusIntervals();
+
     const list = JSON.parse(localStorage.getItem("list")) || [];
 
+    container.replaceChildren();
+
     if (list.length === 0) {
-        container.innerHTML = '<h1 class="empty">Presiona el botón <small>+</small> para agregar un dispositivo</h1>';
+        container.appendChild(buildEmptyState());
         return;
     }
 
-    container.innerHTML = "";
-
     // Recorrer la lista de dispositivos
     list.forEach((device) => {
-        let options = null;
         const card = document.createElement("div");
+        const icon = document.createElement("i");
+        const title = document.createElement("h3");
+        const description = document.createElement("p");
+        const optionsButton = document.createElement("button");
+        const optionsIcon = document.createElement("i");
+        const power = document.createElement("span");
+        const powerIcon = document.createElement("i");
+
+        icon.className = "bi bi-router";
+        title.textContent = device.name;
+        description.textContent = device.mac;
+
+        optionsButton.type = "button";
+        optionsIcon.className = "bi bi-three-dots";
+        optionsIcon.title = "Opciones";
+        optionsButton.appendChild(optionsIcon);
+
+        powerIcon.className = "bi bi-power";
+        power.appendChild(powerIcon);
 
         // Función para comprobar el estado del dispositivo
         const checkStatus = async () => {
@@ -270,12 +370,18 @@ function showDevices() {
                 PORT: device.portStatus,
             };
 
-            const powerResponse = await getStatus(data);
+            try {
+                const powerResponse = await getStatus(data);
 
-            if (powerResponse.status === 200) {
-                card.classList.remove("power");
-                card.classList.add("power-on");
-            } else {
+                if (powerResponse.status === 200) {
+                    card.classList.remove("power");
+                    card.classList.add("power-on");
+                } else {
+                    card.classList.remove("power");
+                    card.classList.remove("power-on");
+                }
+            } catch (error) {
+                console.error("Error al comprobar el estado del dispositivo:", error.message);
                 card.classList.remove("power");
                 card.classList.remove("power-on");
             }
@@ -284,13 +390,8 @@ function showDevices() {
         // Crear la tarjeta del dispositivo
         card.classList.add("card");
         card.classList.add("power");
-        card.innerHTML = `
-            <i class="bi bi-router"></i>
-            <h3>${device.name}</h3>
-            <p>${device.mac}</p>
-            <button type="button"><i class="bi bi-three-dots" title="Opciones"></i></button>
-            <span><i class="bi bi-power"></i></span>
-        `;
+        card.style.zIndex = 1;
+        card.append(icon, title, description, optionsButton, power);
 
         // Agregar evento de fin de animación
         card.addEventListener("animationend", (a) => {
@@ -299,58 +400,64 @@ function showDevices() {
 
         // Agregar evento de clic en la tarjeta
         card.addEventListener("click", async () => {
-            options = card.querySelector(".options") || null;
+            const options = card.querySelector(".options");
 
-            if (!options) card.classList.add("clicked");
+            if (options) options.remove();
+            else card.classList.add("clicked");
+
             if (!card.classList.contains("power-on") && !card.classList.contains("power")) {
                 card.classList.add("power");
 
-                let data = {
+                const data = {
                     MAC: device.mac,
                     HOST: device.host,
                     PORT: device.port,
                 };
 
-                const response = await sendWOL(data);
+                let response;
+
+                try {
+                    response = await sendWOL(data);
+                } catch (error) {
+                    console.error("Error al enviar la señal WOL:", error.message);
+                    spawnAlert("Error", "No se pudo enviar la señal WOL.", "x-circle");
+                    card.classList.remove("power");
+                    return;
+                }
+
+                const dataResponse = await response.json().catch(() => ({ message: "Respuesta inválida del servidor." }));
 
                 if (response.status === 200) {
-                    const dataResponse = await response.json();
-
                     spawnAlert("Éxito", dataResponse.message, "check-circle");
                 } else {
-                    const dataResponse = await response.json();
-
                     spawnAlert("Error", dataResponse.message, "x-circle");
                     card.classList.remove("power");
                 }
 
                 setTimeout(async () => {
-                    data = {
+                    const statusData = {
                         HOST: device.host,
                         PORT: device.portStatus,
                     };
 
-                    const powerResponse = await getStatus(data);
+                    const powerResponse = await getStatus(statusData);
+                    const dataResponse = await powerResponse.json().catch(() => ({ message: "Respuesta inválida del servidor." }));
 
                     if (powerResponse.status === 200) {
-                        const dataResponse = await powerResponse.json();
-
                         spawnAlert("Estado", dataResponse.message, "check-circle");
                         card.classList.add("power-on");
                         card.classList.remove("power");
                     } else {
-                        const dataResponse = await powerResponse.json();
-
                         spawnAlert("Error", dataResponse.message, "x-circle");
                         card.classList.remove("power");
                     }
-                }, parseInt(device.timeout) * 1000);
+                }, Number.parseInt(device.timeout, 10) * 1000);
             } else if (card.classList.contains("power")) spawnAlert("Observación", "Comprobando estado del dispositivo...", "exclamation-triangle");
         });
 
         // Agregar evento de mouseover y mouseleave
         card.addEventListener("mouseleave", () => {
-            options = card.querySelector(".options") || null;
+            const options = card.querySelector(".options");
 
             if (options) options.remove();
 
@@ -358,66 +465,33 @@ function showDevices() {
         });
 
         // Agregar evento de clic en el botón de opciones
-        card.querySelector("button").addEventListener("click", (e) => {
+        optionsButton.addEventListener("click", (e) => {
             e.stopPropagation();
 
-            // Crear el flotante de opciones
-            const optionsElement = `
-                <div class="options">
-                    <div class="option" data-action="close">
-                        <i class="bi bi-x-lg"></i>
-                        <small>Cerrar</small>
-                    </div>
-                    <div class="option" data-action="edit">
-                        <i class="bi bi-pencil-square"></i>
-                        <small>Editar</small>
-                    </div>
-                    <div class="option" data-action="delete">
-                        <i class="bi bi-trash"></i>
-                        <small>Eliminar</small>
-                    </div>
-                </div>
-                `;
+            const existingOptions = card.querySelector(".options");
 
-            // Insertar el flotante de opciones en la tarjeta
-            card.insertAdjacentHTML("beforeend", optionsElement);
+            if (existingOptions) {
+                existingOptions.remove();
+                card.style.zIndex = 1;
+                return;
+            }
+
+            const optionsElement = buildOptionsMenu(card, device);
+
+            card.appendChild(optionsElement);
             card.style.zIndex = 2;
-
-            // Recorrer las opciones
-            card.querySelectorAll(".option").forEach((option) => {
-                // Agregar evento de clic en cada opción
-                option.addEventListener("click", (o) => {
-                    o.stopPropagation();
-
-                    const action = option.getAttribute("data-action");
-
-                    options = card.querySelector(".options") || null;
-
-                    switch (action) {
-                        case "edit":
-                            editMode = true;
-                            loadDevice(device.mac);
-                            break;
-                        case "delete":
-                            deleteDevice(device.mac);
-                            break;
-                        default:
-                            options.remove();
-
-                            card.style.zIndex = 1;
-                            break;
-                    }
-                });
-            });
         });
 
         // Insertar la tarjeta en el contenedor
         container.appendChild(card);
 
         // Comprobar el estado del dispositivo
-        setInterval(() => {
-            if (card.classList.contains("power-on")) checkStatus();
-        }, 5000);
+        clearStatusInterval(device.mac);
+        const intervalId = setInterval(() => {
+            if (card.isConnected && card.classList.contains("power-on")) checkStatus();
+        }, STATUS_REFRESH_MS);
+
+        statusIntervals.set(device.mac, intervalId);
 
         checkStatus();
     });

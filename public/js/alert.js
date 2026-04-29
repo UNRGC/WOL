@@ -1,10 +1,17 @@
 const spawnAlert = (title, message, icon, timer = 3000) => {
     const alert = document.createElement("div");
     alert.classList.add("alert");
-    alert.innerHTML = `
-        <h3><i class="bi bi-${icon}"></i> ${title}</h3>
-        <p id="alert-message">${message}</p>
-    `;
+
+    const heading = document.createElement("h3");
+    const iconElement = document.createElement("i");
+    iconElement.className = `bi bi-${icon}`;
+    heading.append(iconElement, document.createTextNode(` ${title}`));
+
+    const paragraph = document.createElement("p");
+    paragraph.id = "alert-message";
+    paragraph.textContent = message;
+
+    alert.append(heading, paragraph);
     document.body.appendChild(alert);
 
     setTimeout(() => {
